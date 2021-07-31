@@ -1,0 +1,24 @@
+﻿<Window x:Class="MMDMotionCompute.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:MMDMotionCompute"
+        mc:Ignorable="d"
+        Title="MMDMotionCompute" Height="450" Width="800">
+    <Grid>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="*"/>
+        </Grid.RowDefinitions>
+        <TextBlock x:Name="showPath" Grid.Row="0"/>
+        <Button Grid.Row="0" Grid.Column="1" Click="Button_Click">打开文件</Button>
+        <Button Grid.Row="4" Grid.Column="1" Click="Button_Export">导出</Button>
+    </Grid>
+</Window>
