@@ -19,7 +19,7 @@ namespace MMDMotionCompute.Functions
         {
             string bufferFileName = Path.ChangeExtension(path, ".bin");
             Stream bufferStream = new FileStream(bufferFileName, FileMode.Create, FileAccess.Write, FileShare.None);
-            //var positons = pmx.Vertices.Select(u => u.Coordinate).ToArray();
+            var positons = pmx.Vertices.Select(u => u.Coordinate).ToArray();
             //var normals = pmx.Vertices.Select(u => u.Normal).ToArray();
             //var uvs = pmx.Vertices.Select(u => u.UvCoordinate).ToArray();
             WriteVertex(bufferStream, pmx.Vertices);
@@ -42,9 +42,27 @@ namespace MMDMotionCompute.Functions
                 bufferStream.Write(temp, 0, 64);
             }
             int inverseMatrixSize = (int)bufferStream.Position - spos1;
+            int spos2 = (int)bufferStream.Position;
+
+            var vertMorphs = pmx.Morphs.Where(u => u.MorphVertexs != null).ToArray();
+            List<Vector3[]> morphs = new List<Vector3[]>();
+            for (int i = 0; i < vertMorphs.Length; i++)
+            {
+                //Vector3[] positons1 = positons.ToArray();
+                Vector3[] positons1 = new Vector3[pmx.Vertices.Length];
+                var morph = vertMorphs[i].MorphVertexs;
+                for (int j = 0; j < morph.Length; j++)
+                {
+                    positons1[morph[j].VertexIndex] = morph[j].Offset;
+                }
+                bufferStream.Write(MemoryMarshal.Cast<Vector3, byte>(positons1));
+            }
+            int spos3 = (int)bufferStream.Position;
+            int morphSize = (int)bufferStream.Position - spos2;
 
             bufferStream.Flush();
             bufferStream.Dispose();
+            GLTFWriterContext glTFWriterContext = new GLTFWriterContext();
 
             GLTFModel gltfModel = new GLTFModel();
             const int boneStartNode = 2;
@@ -114,11 +132,38 @@ namespace MMDMotionCompute.Functions
                 new GLTFBufferView{buffer=0,byteLength=vertexBufferSize,byteStride=vertexStride,target=34962},
                 new GLTFBufferView{buffer=0,byteLength=indexBufferSize,byteOffset=spos0,target=34963},
                 new GLTFBufferView{buffer=0,byteLength=inverseMatrixSize,byteOffset=spos1,target=34963},
+                new GLTFBufferView{buffer=0,byteLength=morphSize,byteOffset=spos2,target=34963},
             };
             var mesh = new GLTFMesh { name = pmx.Name };
             mesh.primitives = new GLTFPrimitive[pmx.Materials.Count];
-            const int cMatStart = 6;
 
+            gltfModel.meshes = new GLTFMesh[] { mesh };
+            glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 0, count = pmx.Vertices.Length, type = "VEC3" });
+            glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 12, count = pmx.Vertices.Length, type = "VEC3" });
+            glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 24, count = pmx.Vertices.Length, type = "VEC2" });
+            glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5123, byteOffset = 32, count = pmx.Vertices.Length, type = "VEC4" });
+            glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 40, count = pmx.Vertices.Length, type = "VEC4" });
+            glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 2, componentType = 5126, byteOffset = 0, count = pmx.Bones.Count, type = "MAT4" });
+            glTFWriterContext.StartWriteAccessorMark("material");
+
+            for (int i = 0; i < pmx.Materials.Count; i++)
+            {
+                var material = pmx.Materials[i];
+                glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 1, byteOffset = material.TriangeIndexStartNum * 4, count = material.TriangeIndexNum, componentType = 5125, type = "SCALAR", });
+            }
+
+            glTFWriterContext.StartWriteAccessorMark("morph");
+            for (int i = 0; i < vertMorphs.Length; i++)
+            {
+                if (vertMorphs[i].MorphVertexs != null)
+                {
+                    glTFWriterContext.accessors.Add(new GLTFAccessor { bufferView = 3, componentType = 5126, byteOffset = i * pmx.Vertices.Length * 12, count = pmx.Vertices.Length, type = "VEC3" });
+                }
+            }
+            gltfModel.accessors = glTFWriterContext.accessors.ToArray();
+
+            int startMaterial = glTFWriterContext.accessorStart["material"];
+            int startMorph = glTFWriterContext.accessorStart["morph"];
             for (int i = 0; i < pmx.Materials.Count; i++)
             {
                 Dictionary<string, int> attrs = new Dictionary<string, int>();
@@ -128,22 +173,16 @@ namespace MMDMotionCompute.Functions
                 attrs["JOINTS_0"] = 3;
                 attrs["WEIGHTS_0"] = 4;
 
-                mesh.primitives[i] = new GLTFPrimitive { material = i, indices = i + cMatStart, attributes = attrs };
+                mesh.primitives[i] = new GLTFPrimitive { material = i, indices = i + startMaterial, attributes = attrs };
+                List<Dictionary<string, int>> targets = new List<Dictionary<string, int>>();
+                for (int j = 0; j < vertMorphs.Length; j++)
+                {
+                    var target = new Dictionary<string, int>();
+                    target["POSITION"] = startMorph + j;
+                    targets.Add(target);
+                }
+                mesh.primitives[i].targets = targets.ToArray();
             }
-            gltfModel.meshes = new GLTFMesh[] { mesh };
-            gltfModel.accessors = new GLTFAccessor[pmx.Materials.Count + cMatStart];
-            gltfModel.accessors[0] = new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 0, count = pmx.Vertices.Length, type = "VEC3" };
-            gltfModel.accessors[1] = new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 12, count = pmx.Vertices.Length, type = "VEC3" };
-            gltfModel.accessors[2] = new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 24, count = pmx.Vertices.Length, type = "VEC2" };
-            gltfModel.accessors[3] = new GLTFAccessor { bufferView = 0, componentType = 5123, byteOffset = 32, count = pmx.Vertices.Length, type = "VEC4" };
-            gltfModel.accessors[4] = new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 40, count = pmx.Vertices.Length, type = "VEC4" };
-            gltfModel.accessors[5] = new GLTFAccessor { bufferView = 2, componentType = 5126, byteOffset = 0, count = pmx.Bones.Count, type = "MAT4" };
-            for (int i = 0; i < pmx.Materials.Count; i++)
-            {
-                var material = pmx.Materials[i];
-                gltfModel.accessors[i + cMatStart] = new GLTFAccessor { bufferView = 1, byteOffset = material.TriangeIndexStartNum * 4, count = material.TriangeIndexNum, componentType = 5125, type = "SCALAR", };
-            }
-
             var option = new JsonSerializerOptions(JsonSerializerDefaults.General);
             option.WriteIndented = true;
             option.DefaultIgnoreCondition = System.Text.Json.Serialization.JsonIgnoreCondition.WhenWritingNull;
