@@ -15,5 +15,8 @@ namespace MMDMotionCompute.Functions
             accessorStart.Add(name, accessors.Count);
         }
         public List<GLTFAccessor> accessors = new List<GLTFAccessor>();
+
+        public Dictionary<string, int> bufferOffset = new Dictionary<string, int>();
+        public Dictionary<string, int> bufferLength = new Dictionary<string, int>();
     }
 }

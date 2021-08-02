@@ -20,5 +20,6 @@ namespace MMDMotionCompute.GLTF
         public GLTFNode[] nodes { get; set; }
         public GLTFSkin[] skins { get; set; }
         public GLTFTexture[] textures { get; set; }
+        public GLTFAnimation[] animations { get; set; }
     }
 }

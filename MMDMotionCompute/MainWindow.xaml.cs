@@ -31,15 +31,27 @@ namespace MMDMotionCompute
 
         public string filePath;
         public PMXFormat pmx;
+        public VMDFormat vmd;
 
-        private void Button_Click(object sender, RoutedEventArgs e)
+        private void Button_PMX(object sender, RoutedEventArgs e)
         {
             OpenFileDialog openFileDialog = new OpenFileDialog();
-            openFileDialog.Filter = "pmx|*.pmx|vmd|*.vmd";
+            openFileDialog.Filter = "pmx|*.pmx";
             openFileDialog.Title = "open";
             if (openFileDialog.ShowDialog() == true)
             {
                 pmx = PMXFormat.Load(new BinaryReader(File.OpenRead(openFileDialog.FileName)));
+                imagePath = Path.GetDirectoryName(openFileDialog.FileName);
+            }
+        }
+
+        private void Button_VMD(object sender, RoutedEventArgs e)
+        {
+            OpenFileDialog openFileDialog = new OpenFileDialog();
+            openFileDialog.Filter = "vmd|*.vmd";
+            if (openFileDialog.ShowDialog() == true)
+            {
+                vmd = VMDFormat.Load(new BinaryReader(File.OpenRead(openFileDialog.FileName)));
                 imagePath = Path.GetDirectoryName(openFileDialog.FileName);
             }
         }
@@ -52,7 +64,7 @@ namespace MMDMotionCompute
             saveFileDialog.Title = "save";
             if (saveFileDialog.ShowDialog() == true)
             {
-                GLTFUtil.SaveAsGLTF2(pmx, imagePath, saveFileDialog.FileName);
+                GLTFUtil.SaveAsGLTF2(pmx, vmd, imagePath, saveFileDialog.FileName);
             }
         }
     }
