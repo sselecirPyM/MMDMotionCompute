@@ -22,12 +22,29 @@ namespace MMDMotionCompute.Functions
 
         public int streamPosition = 0;
 
-        public void MarkBuf(string name)
+        public void MarkBuf(string name, GLTFBufferView desc, GLTFAccessor desc1)
         {
             int streamCurrentposition = (int)writer.BaseStream.Position;
             int length = streamCurrentposition - streamPosition;
             bufferOffset[name] = new OffsetAndLength(streamPosition, length, 0);
+            if (desc != null)
+            {
+                bufferViewStart[name] = bufferViews.Count;
+                desc.buffer = 0;
+                desc.byteLength = length;
+                desc.byteOffset = streamPosition;
+                desc.name = name;
+                bufferViews.Add(desc);
+            }
+            if (desc1 != null)
+            {
+                accessorStart[name] = accessors.Count;
+                desc1.bufferView = bufferViews.Count - 1;
+                desc1.byteOffset = 0;
+                desc1.name = name;
+                accessors.Add(desc1);
 
+            }
             streamPosition = (int)writer.BaseStream.Position;
         }
 
