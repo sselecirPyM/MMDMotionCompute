@@ -6,7 +6,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MMDMotionCompute.FileFormat
+namespace MMDMotionCompute.MMD
 {
     enum PMX_BoneWeightDeformType
     {

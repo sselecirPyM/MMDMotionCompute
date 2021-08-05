@@ -5,9 +5,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.IO;
 using System.Numerics;
-using MMDMotionCompute.MMDSupport;
 
-namespace MMDMotionCompute.FileFormat
+namespace MMDMotionCompute.MMD
 {
     public class VMDFormat
     {

@@ -5,7 +5,7 @@ using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MMDMotionCompute.MMDSupport
+namespace MMDMotionCompute.MMD
 {
 
     public struct BoneKeyFrame : IComparable<BoneKeyFrame>

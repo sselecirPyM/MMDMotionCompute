@@ -10,9 +10,25 @@ namespace MMDMotionCompute.Utility
 {
     public class BinaryWriterPlus : BinaryWriter
     {
-        public BinaryWriterPlus (Stream stream) : base(stream)
+        public BinaryWriterPlus(Stream stream) : base(stream)
         {
 
+        }
+
+        public BinaryWriterPlus(Stream input, Encoding encoding) : base(input, encoding)
+        {
+
+        }
+
+        public BinaryWriterPlus(Stream input, Encoding encoding, bool leaveOpen) : base(input, encoding, leaveOpen)
+        {
+
+        }
+
+        public void Write(Vector2 vec2)
+        {
+            Write(vec2.X);
+            Write(vec2.Y);
         }
 
         public void Write(Vector3 vec3)
@@ -20,6 +36,14 @@ namespace MMDMotionCompute.Utility
             Write(vec3.X);
             Write(vec3.Y);
             Write(vec3.Z);
+        }
+
+        public void Write(Vector4 vec4)
+        {
+            Write(vec4.X);
+            Write(vec4.Y);
+            Write(vec4.Z);
+            Write(vec4.W);
         }
 
         public void Write(Quaternion quat)

@@ -1,12 +1,11 @@
-﻿using MMDMotionCompute.FileFormat;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace MMDMotionCompute.MMDSupport
+namespace MMDMotionCompute.MMD
 {
     public class MMDMotion
     {
@@ -111,6 +110,13 @@ namespace MMDMotionCompute.MMDSupport
                 motionComponent.BoneKeyFrameSet.Clear();
                 motionComponent.MorphKeyFrameSet.Clear();
             }
+        }
+
+        public static MMDMotion Load(VMDFormat vmd)
+        {
+            MMDMotion motionComponent = new MMDMotion();
+            Reload(motionComponent, vmd);
+            return motionComponent;
         }
 
         public static void Reload(this MMDMotion motionComponent, VMDFormat vmd)
