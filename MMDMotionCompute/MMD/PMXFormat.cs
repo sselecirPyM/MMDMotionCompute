@@ -359,8 +359,8 @@ namespace MMDMotionCompute.MMD
         public Vector3 Position;
         public Vector3 Rotation;
         public float Mass;
-        public float TranslateDamp;
-        public float RotateDamp;
+        public float LinearDamping;
+        public float AngularDamping;
         public float Restitution;
         public float Friction;
         public PMX_RigidBodyType Type;
@@ -766,8 +766,8 @@ namespace MMDMotionCompute.MMD
                 rigidBody.Position = ReadVector3(reader);
                 rigidBody.Rotation = ReadVector3(reader);
                 rigidBody.Mass = reader.ReadSingle();
-                rigidBody.TranslateDamp = reader.ReadSingle();
-                rigidBody.RotateDamp = reader.ReadSingle();
+                rigidBody.LinearDamping = reader.ReadSingle();
+                rigidBody.AngularDamping = reader.ReadSingle();
                 rigidBody.Restitution = reader.ReadSingle();
                 rigidBody.Friction = reader.ReadSingle();
                 rigidBody.Type = (PMX_RigidBodyType)reader.ReadByte();

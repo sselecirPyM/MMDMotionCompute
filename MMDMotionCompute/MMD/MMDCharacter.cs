@@ -4,6 +4,7 @@ using System.Linq;
 using System.Numerics;
 using System.Text;
 using System.Threading.Tasks;
+using MMDMotionCompute.Physics;
 
 namespace MMDMotionCompute.MMD
 {
@@ -15,6 +16,68 @@ namespace MMDMotionCompute.MMD
         public Dictionary<int, List<List<int>>> IKNeedUpdateIndexs;
         public List<int> AppendNeedUpdateMatIndexs = new List<int>();
         public List<int> PhysicsNeedUpdateMatIndexs = new List<int>();
+
+        public List<PhysicsJoint> joints;
+        public List<PhysicsRigidBody> rigidBodys;
+
+        public Matrix4x4 LocalToWorld = Matrix4x4.Identity;
+        public Matrix4x4 WorldToLocal = Matrix4x4.Identity;
+
+        public List<PMX_RigidBody> rigidBodyDescs;
+        public List<PMX_Joint> jointDescs;
+
+        public void PrePhysicsSync(PhysicsScene physics3DScene)
+        {
+            for (int i = 0; i < rigidBodyDescs.Count; i++)
+            {
+                var desc = rigidBodyDescs[i];
+                if (desc.Type != 0) continue;
+                int index = desc.AssociatedBoneIndex;
+
+                Matrix4x4 mat2 = Matrix4x4.CreateFromQuaternion(ToQuaternion(desc.Rotation)) * Matrix4x4.CreateTranslation(desc.Position) * bones[index].GeneratedTransform * LocalToWorld;
+                physics3DScene.MoveRigidBody(rigidBodys[i], mat2);
+
+            }
+        }
+
+        public void PhysicsSync(PhysicsScene physics3DScene)
+        {
+            Matrix4x4.Decompose(WorldToLocal, out _, out var q1, out var t1);
+            for (int i = 0; i < rigidBodyDescs.Count; i++)
+            {
+                var desc = rigidBodyDescs[i];
+                if (desc.Type == 0) continue;
+                int index = desc.AssociatedBoneIndex;
+                if (index == -1) continue;
+                bones[index].GetPosRot2(out Vector3 pos, out Quaternion rot);
+                bones[index]._generatedTransform = Matrix4x4.CreateTranslation(-desc.Position) * Matrix4x4.CreateFromQuaternion(rigidBodys[i].GetRotation() / ToQuaternion(desc.Rotation) * q1)
+                    * Matrix4x4.CreateTranslation(Vector3.Transform(rigidBodys[i].GetPosition(), WorldToLocal));
+            }
+            UpdateMatrices(PhysicsNeedUpdateMatIndexs);
+
+            for (int i = 0; i < rigidBodyDescs.Count; i++)
+            {
+                var desc = rigidBodyDescs[i];
+                if (desc.Type == 0) continue;
+                int index = desc.AssociatedBoneIndex;
+                if (index == -1) continue;
+                bones[index].GetPosRot2(out Vector3 pos, out Quaternion rot);
+                Vector3 pos1 = new Vector3();
+                Quaternion rot1 = Quaternion.Identity;
+
+                Vector3 parentStaticPosition = new Vector3();
+                int parent = bones[index].ParentIndex;
+                if (parent != -1)
+                {
+                    bones[parent].GetPosRot2(out pos1, out rot1);
+                    parentStaticPosition = bones[parent].staticPosition;
+                }
+
+                bones[index].dynamicPosition = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1)+ parentStaticPosition- bones[index].staticPosition;
+                bones[index].rotation = rot / rot1;
+            }
+            UpdateAppendBones();
+        }
 
         public void BakeSequenceProcessMatrixsIndex()
         {
@@ -251,6 +314,25 @@ namespace MMDMotionCompute.MMD
             //VertexMaterialMorph();
         }
 
+
+        public void AddPhysics(PhysicsScene physics3DScene)
+        {
+            rigidBodys = new List<PhysicsRigidBody>();
+            joints = new List<PhysicsJoint>();
+            for (int j = 0; j < rigidBodyDescs.Count; j++)
+            {
+                rigidBodys.Add(new PhysicsRigidBody());
+                var desc = rigidBodyDescs[j];
+                physics3DScene.AddRigidBody(rigidBodys[j], desc);
+            }
+            for (int j = 0; j < jointDescs.Count; j++)
+            {
+                joints.Add(new PhysicsJoint());
+                var desc = jointDescs[j];
+                physics3DScene.AddJoint(joints[j], rigidBodys[desc.AssociatedRigidBodyIndex1], rigidBodys[desc.AssociatedRigidBodyIndex2], desc);
+            }
+        }
+
         private Vector3 LimitAngle(Vector3 angle, bool axis_lim, Vector3 low, Vector3 high)
         {
             if (!axis_lim)
@@ -308,7 +390,7 @@ namespace MMDMotionCompute.MMD
                 {
                     bone.IKTargetIndex = _bone.boneIK.IKTargetIndex;
                     bone.CCDIterateLimit = _bone.boneIK.CCDIterateLimit;
-                    bone.CCDAngleLimit=_bone.boneIK.CCDAngleLimit;
+                    bone.CCDAngleLimit = _bone.boneIK.CCDAngleLimit;
                     bone.boneIKLinks = new IKLink[_bone.boneIK.IKLinks.Length];
 
                     for (int j = 0; j < bone.boneIKLinks.Length; j++)
@@ -350,6 +432,8 @@ namespace MMDMotionCompute.MMD
                 }
                 charater.bones.Add(bone);
             }
+            charater.rigidBodyDescs = pmx.RigidBodies;
+            charater.jointDescs = pmx.Joints;
             charater.BakeSequenceProcessMatrixsIndex();
             return charater;
         }
@@ -429,6 +513,11 @@ namespace MMDMotionCompute.MMD
             public Vector3 LimitMax;
             public IKTransformOrder TransformOrder;
             //public AxisFixType FixTypes;
+        }
+
+        public static Quaternion ToQuaternion(Vector3 angle)
+        {
+            return Quaternion.CreateFromYawPitchRoll(angle.Y, angle.X, angle.Z);
         }
     }
 

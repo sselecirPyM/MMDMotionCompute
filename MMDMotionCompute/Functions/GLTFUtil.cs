@@ -10,6 +10,7 @@ using MMDMotionCompute.GLTF;
 using System.Runtime.InteropServices;
 using System.Numerics;
 using MMDMotionCompute.Utility;
+using MMDMotionCompute.Physics;
 
 namespace MMDMotionCompute.Functions
 {
@@ -86,6 +87,9 @@ namespace MMDMotionCompute.Functions
             {
                 character = MMDCharacter.Load(pmx);
                 MMDMotion motion = VMDFormatExtension.Load(vmd);
+                PhysicsScene scene = new PhysicsScene();
+                scene.Initialize();
+                character.AddPhysics(scene);
                 foreach (var bone in character.bones)
                 {
                     boneKeyFrames[bone.Name] = new List<BoneKeyFrame>();
@@ -93,10 +97,20 @@ namespace MMDMotionCompute.Functions
                 for (int t = 0; t < motion.lastFrame; t++)
                 {
                     float time = t / 30.0f;
-                    character.SetMotionTime(time, motion);
+                    {
+                        character.SetMotionTime(time - 1 / 60.0f, motion);
+                        character.PrePhysicsSync(scene);
+                        scene.Simulation(1 / 60.0f);
+                        character.PhysicsSync(scene);
+
+                        character.SetMotionTime(time, motion);
+                        character.PrePhysicsSync(scene);
+                        scene.Simulation(1 / 60.0f);
+                        character.PhysicsSync(scene);
+                    }
+
                     foreach (var bone in character.bones)
                     {
-                        bone.GetPosRot2(out Vector3 _pos, out Quaternion _rot);
                         boneKeyFrames[bone.Name].Add(new BoneKeyFrame { Frame = t, Translation = bone.dynamicPosition, Rotation = bone.rotation });
                     }
                 }
