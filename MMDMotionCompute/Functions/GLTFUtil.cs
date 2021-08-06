@@ -79,12 +79,31 @@ namespace MMDMotionCompute.Functions
                 bufferStream.Write(MemoryMarshal.Cast<Vector3, byte>(positons1));
                 glTFWriterContext.MarkBuf(vertMorphs[i].Name, new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3" });
             }
+            MMDCharacter character;
 
+            Dictionary<string, List<BoneKeyFrame>> boneKeyFrames = new Dictionary<string, List<BoneKeyFrame>>();
             if (vmd != null)
             {
-                foreach (var keyFrames in vmd.BoneKeyFrameSet)
+                character = MMDCharacter.Load(pmx);
+                MMDMotion motion = VMDFormatExtension.Load(vmd);
+                foreach (var bone in character.bones)
                 {
-                    //var offset = (int)bufferStream.Position;
+                    boneKeyFrames[bone.Name] = new List<BoneKeyFrame>();
+                }
+                for (int t = 0; t < motion.lastFrame; t++)
+                {
+                    float time = t / 30.0f;
+                    character.SetMotionTime(time, motion);
+                    foreach (var bone in character.bones)
+                    {
+                        bone.GetPosRot2(out Vector3 _pos, out Quaternion _rot);
+                        boneKeyFrames[bone.Name].Add(new BoneKeyFrame { Frame = t, Translation = bone.dynamicPosition, Rotation = bone.rotation });
+                    }
+                }
+
+                //foreach (var keyFrames in vmd.BoneKeyFrameSet)
+                foreach (var keyFrames in boneKeyFrames)
+                {
                     Vector3 relatePosition = Vector3.Zero;
 
                     if (name2Bone.TryGetValue(keyFrames.Key, out int boneIndex))
@@ -98,7 +117,6 @@ namespace MMDMotionCompute.Functions
                         }
                     }
 
-                    //glTFWriterContext.bufferOffset[keyFrames.Key] = new(offset, (int)bufferStream.Position - offset, offset - spos3);
                     foreach (var keyFrame in keyFrames.Value)
                         binaryWriter.Write(keyFrame.Frame / 30.0f);
                     glTFWriterContext.MarkBuf(keyFrames.Key + "/_keyFrameTime", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = keyFrames.Value.Count, type = "SCALAR" });
@@ -111,13 +129,10 @@ namespace MMDMotionCompute.Functions
                         binaryWriter.Write(keyFrame.Translation + relatePosition);
                     glTFWriterContext.MarkBuf(keyFrames.Key + "/_keyFrameTranslation", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = keyFrames.Value.Count, type = "VEC3" });
                 }
-            }
 
-            if (vmd != null)
-            {
+
                 List<float[]> keyFrames1 = VMDSampler1.ProcessVertMorph(vmd, vertMorphs, out float[] morphFrameTime);
 
-                var morphOffset1 = (int)bufferStream.Position;
                 for (int i = 0; i < morphFrameTime.Length; i++)
                 {
                     binaryWriter.Write(morphFrameTime[i]);
@@ -199,55 +214,22 @@ namespace MMDMotionCompute.Functions
             }
             gltfModel.buffers = new[] { new GLTFBuffer { uri = Path.GetFileName(bufferFileName), byteLength = totalSize } };
             List<GLTFBufferView> bufferViews = glTFWriterContext.bufferViews;
-            //bufferViews.AddRange(new[]
-            //{
-            //    //new GLTFBufferView{buffer=0, byteLength=vertexBufferSize, byteStride=vertexStride, target=34962},
-            //    //new GLTFBufferView{buffer=0, byteLength=indexBufferSize, byteOffset=spos0, target=34963},
-            //    //new GLTFBufferView{buffer=0, byteLength=inverseMatrixSize, byteOffset=spos1, target=34963},
-            //    new GLTFBufferView{buffer=0, byteLength=morphSize, byteOffset=spos2, target=34963},
-            //});
-            //if (vmd != null)
-            //{
-            //    bufferViews.Add(new GLTFBufferView { buffer = 0, byteLength = animBoneSize, byteOffset = spos3, target = 34963 });
-            //    bufferViews.Add(new GLTFBufferView { buffer = 0, byteLength = animMorphSize, byteOffset = spos4, target = 34963 });
-            //}
 
             var mesh = new GLTFMesh { name = pmx.Name };
             mesh.primitives = new GLTFPrimitive[pmx.Materials.Count];
 
             gltfModel.meshes = new GLTFMesh[] { mesh };
-            //accessors.Add(new GLTFAccessor { bufferView = 2, componentType = 5126, byteOffset = 0, count = pmx.Bones.Count, type = "MAT4" });
-            //glTFWriterContext.StartWriteAccessorMark("material");
-            //for (int i = 0; i < pmx.Materials.Count; i++)
-            //{
-            //    var material = pmx.Materials[i];
-            //    accessors.Add(new GLTFAccessor { bufferView = 1, byteOffset = material.TriangeIndexStartNum * 4, count = material.TriangeIndexNum, componentType = 5125, type = "SCALAR", });
-            //}
 
-            //glTFWriterContext.StartWriteAccessorMark("morph");
-            //for (int i = 0; i < vertMorphs.Length; i++)
-            //{
-            //    accessors.Add(new GLTFAccessor { bufferView = 3, componentType = 5126, byteOffset = i * pmx.Vertices.Length * 12, count = pmx.Vertices.Length, type = "VEC3" });
-            //}
 
             if (vmd != null)
             {
-                //glTFWriterContext.StartWriteAccessorMark("animation");
-                //foreach (var keyFrames in vmd.BoneKeyFrameSet)
-                //{
-                //    int bufOfs1 = glTFWriterContext.bufferOffset[keyFrames.Key].localOffset;
-
-                //    glTFWriterContext.StartWriteAccessorMark(keyFrames.Key);
-                //    accessors.Add(new GLTFAccessor { bufferView = 4, componentType = 5126, byteOffset = bufOfs1, count = keyFrames.Value.Count, type = "SCALAR" });
-                //    accessors.Add(new GLTFAccessor { bufferView = 4, componentType = 5126, byteOffset = bufOfs1 + keyFrames.Value.Count * 4, count = keyFrames.Value.Count, type = "VEC4" });
-                //    accessors.Add(new GLTFAccessor { bufferView = 4, componentType = 5126, byteOffset = bufOfs1 + keyFrames.Value.Count * 20, count = keyFrames.Value.Count, type = "VEC3" });
-                //}
                 List<GLTFAnimation> animations = new List<GLTFAnimation>();
                 GLTFAnimation animation = new GLTFAnimation();
                 animation.name = vmd.Name;
                 List<GLTFAnimationSampler> samplers = new List<GLTFAnimationSampler>();
                 List<GLTFAnimationChannel> channels = new List<GLTFAnimationChannel>();
-                foreach (var keyFrames in vmd.BoneKeyFrameSet)
+                //foreach (var keyFrames in vmd.BoneKeyFrameSet)
+                foreach (var keyFrames in boneKeyFrames)
                 {
                     if (name2Bone.TryGetValue(keyFrames.Key, out int index))
                     {
@@ -281,8 +263,6 @@ namespace MMDMotionCompute.Functions
                         }
                     }
                 }
-
-                //accessors.Add(new GLTFAccessor { bufferView = 5, componentType = 5126, byteOffset = 0, count = vertMorphs.Length, type = "SCALAR" });
 
                 {
                     GLTFAnimationSampler samplerMorph = new GLTFAnimationSampler();

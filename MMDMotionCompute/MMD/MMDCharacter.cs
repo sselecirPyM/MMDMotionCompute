@@ -81,6 +81,7 @@ namespace MMDMotionCompute.MMD
 
         void IK(int boneIndex, List<Bone> bones)
         {
+
             int ikTargetIndex = bones[boneIndex].IKTargetIndex;
             if (ikTargetIndex == -1) return;
             var entity = bones[boneIndex];
@@ -91,7 +92,8 @@ namespace MMDMotionCompute.MMD
 
             int h1 = entity.CCDIterateLimit / 2;
             Vector3 posSource = entitySource.GetPos2();
-            if ((posTarget - posSource).LengthSquared() < 1e-8f) return;
+            if ((posTarget - posSource).LengthSquared() < 1e-6f)
+                return;
             for (int i = 0; i < entity.CCDIterateLimit; i++)
             {
                 bool axis_lim = i < h1;
@@ -173,7 +175,8 @@ namespace MMDMotionCompute.MMD
                     UpdateMatrices(IKNeedUpdateIndexs[boneIndex][j]);
                 }
                 posSource = entitySource.GetPos2();
-                if ((posTarget - posSource).LengthSquared() < 1e-8f) return;
+                if ((posTarget - posSource).LengthSquared() < 1e-6f)
+                    return;
             }
         }
 
@@ -210,7 +213,7 @@ namespace MMDMotionCompute.MMD
             UpdateMatrices(AppendNeedUpdateMatIndexs);
         }
 
-        public void SetPose3()
+        void BoneMorphIKAppend()
         {
             //for (int i = 0; i < morphStateComponent.morphs.Count; i++)
             //{
@@ -232,6 +235,20 @@ namespace MMDMotionCompute.MMD
                 IK(i, bones);
             }
             UpdateAppendBones();
+        }
+
+        public void SetMotionTime(float time, MMDMotion motionComponent)
+        {
+            foreach (var bone in bones)
+            {
+                var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
+                bone.rotation = keyframe.rotation;
+                bone.dynamicPosition = keyframe.translation;
+                //cachedBoneKeyFrames[bone.index] = keyframe;
+            }
+            UpdateAllMatrix();
+            BoneMorphIKAppend();
+            //VertexMaterialMorph();
         }
 
         private Vector3 LimitAngle(Vector3 angle, bool axis_lim, Vector3 low, Vector3 high)
@@ -291,6 +308,7 @@ namespace MMDMotionCompute.MMD
                 {
                     bone.IKTargetIndex = _bone.boneIK.IKTargetIndex;
                     bone.CCDIterateLimit = _bone.boneIK.CCDIterateLimit;
+                    bone.CCDAngleLimit=_bone.boneIK.CCDAngleLimit;
                     bone.boneIKLinks = new IKLink[_bone.boneIK.IKLinks.Length];
 
                     for (int j = 0; j < bone.boneIKLinks.Length; j++)
@@ -332,7 +350,7 @@ namespace MMDMotionCompute.MMD
                 }
                 charater.bones.Add(bone);
             }
-
+            charater.BakeSequenceProcessMatrixsIndex();
             return charater;
         }
 

@@ -11,6 +11,7 @@ namespace MMDMotionCompute.MMD
     {
         public Dictionary<string, List<BoneKeyFrame>> BoneKeyFrameSet { get; set; } = new Dictionary<string, List<BoneKeyFrame>>();
         public Dictionary<string, List<MorphKeyFrame>> MorphKeyFrameSet { get; set; } = new Dictionary<string, List<MorphKeyFrame>>();
+        public int lastFrame;
 
         const float c_framePerSecond = 30;
         public BoneKeyFrame GetBoneMotion(string key, float time)
@@ -119,20 +120,28 @@ namespace MMDMotionCompute.MMD
             return motionComponent;
         }
 
-        public static void Reload(this MMDMotion motionComponent, VMDFormat vmd)
+        public static void Reload(this MMDMotion motion, VMDFormat vmd)
         {
-            lock (motionComponent)
+            lock (motion)
             {
-                motionComponent.BoneKeyFrameSet.Clear();
-                motionComponent.MorphKeyFrameSet.Clear();
+                motion.BoneKeyFrameSet.Clear();
+                motion.MorphKeyFrameSet.Clear();
 
                 foreach (var pair in vmd.BoneKeyFrameSet)
                 {
-                    motionComponent.BoneKeyFrameSet.Add(pair.Key, new List<BoneKeyFrame>(pair.Value));
+                    motion.BoneKeyFrameSet.Add(pair.Key, new List<BoneKeyFrame>(pair.Value));
+                    if (pair.Value.Count > 0)
+                    {
+                        motion.lastFrame = Math.Max(pair.Value[pair.Value.Count - 1].Frame, motion.lastFrame);
+                    }
                 }
                 foreach (var pair in vmd.MorphKeyFrameSet)
                 {
-                    motionComponent.MorphKeyFrameSet.Add(pair.Key, new List<MorphKeyFrame>(pair.Value));
+                    motion.MorphKeyFrameSet.Add(pair.Key, new List<MorphKeyFrame>(pair.Value));
+                    if (pair.Value.Count > 0)
+                    {
+                        motion.lastFrame = Math.Max(pair.Value[pair.Value.Count - 1].Frame, motion.lastFrame);
+                    }
                 }
             }
         }
