@@ -5,21 +5,35 @@
         xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
         xmlns:local="clr-namespace:MMDMotionCompute"
         mc:Ignorable="d"
-        Title="MMDMotionCompute" Height="450" Width="800">
+        Title="MMDMotionCompute" Height="450" Width="800"
+        Name="_thisPage">
     <Grid>
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="*"/>
             <ColumnDefinition Width="*"/>
         </Grid.ColumnDefinitions>
-        <Grid.RowDefinitions>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="Auto"/>
-            <RowDefinition Height="*"/>
-            <RowDefinition Height="*"/>
-        </Grid.RowDefinitions>
-        <TextBlock x:Name="showPath" Grid.Row="0"/>
-        <Button Grid.Row="0" Grid.Column="1" Click="Button_PMX">打开PMX</Button>
-        <Button Grid.Row="1" Grid.Column="1" Click="Button_VMD">打开VMD</Button>
-        <Button Grid.Row="4" Grid.Column="1" Click="Button_Export">导出</Button>
+        <StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock>PMX:</TextBlock>
+                <TextBlock x:Name="showPath" Grid.Row="0"/>
+            </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock>VMD:</TextBlock>
+                <TextBlock x:Name="showVmdPath" Grid.Row="0"/>
+            </StackPanel>
+            <CheckBox Content="物理模拟" IsChecked="{Binding ElementName=_thisPage,Path=physics,Mode=TwoWay}"/>
+            <CheckBox Content="稀疏顶点变形" IsChecked="{Binding ElementName=_thisPage,Path=sparseMorph,Mode=TwoWay}"/>
+        </StackPanel>
+        <Grid Grid.Column="1">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+            <Button Grid.Row="0" Click="Button_PMX">打开PMX</Button>
+            <Button Grid.Row="1" Click="Button_VMD">打开VMD</Button>
+            <Button Grid.Row="4" Click="Button_Export">导出</Button>
+        </Grid>
     </Grid>
 </Window>

@@ -26,6 +26,8 @@ namespace MMDMotionCompute.MMD
         public List<PMX_RigidBody> rigidBodyDescs;
         public List<PMX_Joint> jointDescs;
 
+        MorphStateComponent morphStateComponent;
+
         public void PrePhysicsSync(PhysicsScene physics3DScene)
         {
             for (int i = 0; i < rigidBodyDescs.Count; i++)
@@ -73,10 +75,25 @@ namespace MMDMotionCompute.MMD
                     parentStaticPosition = bones[parent].staticPosition;
                 }
 
-                bones[index].dynamicPosition = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1)+ parentStaticPosition- bones[index].staticPosition;
+                bones[index].dynamicPosition = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1) + parentStaticPosition - bones[index].staticPosition;
                 bones[index].rotation = rot / rot1;
             }
             UpdateAppendBones();
+        }
+
+        public void ResetPhysics(PhysicsScene physics3DScene)
+        {
+            UpdateAllMatrix();
+            for (int i = 0; i < rigidBodyDescs.Count; i++)
+            {
+                var desc = rigidBodyDescs[i];
+                if (desc.Type == 0) continue;
+                int index = desc.AssociatedBoneIndex;
+                if (index == -1) continue;
+                var mat1 = bones[index].GeneratedTransform * LocalToWorld;
+                Matrix4x4.Decompose(mat1, out _, out var rot, out _);
+                physics3DScene.ResetRigidBody(rigidBodys[i], Vector3.Transform(desc.Position, mat1), rot * ToQuaternion(desc.Rotation));
+            }
         }
 
         public void BakeSequenceProcessMatrixsIndex()
@@ -278,20 +295,20 @@ namespace MMDMotionCompute.MMD
 
         void BoneMorphIKAppend()
         {
-            //for (int i = 0; i < morphStateComponent.morphs.Count; i++)
-            //{
-            //    if (morphStateComponent.morphs[i].Type == MorphType.Bone)
-            //    {
-            //        MorphBoneDesc[] morphBoneStructs = morphStateComponent.morphs[i].MorphBones;
-            //        float computedWeight = morphStateComponent.Weights.Computed[i];
-            //        for (int j = 0; j < morphBoneStructs.Length; j++)
-            //        {
-            //            var morphBoneStruct = morphBoneStructs[j];
-            //            bones[morphBoneStruct.BoneIndex].rotation *= Quaternion.Slerp(Quaternion.Identity, morphBoneStruct.Rotation, computedWeight);
-            //            bones[morphBoneStruct.BoneIndex].dynamicPosition += morphBoneStruct.Translation * computedWeight;
-            //        }
-            //    }
-            //}
+            for (int i = 0; i < morphStateComponent.morphs.Count; i++)
+            {
+                if (morphStateComponent.morphs[i].Type == PMX_MorphType.Bone)
+                {
+                    PMX_MorphBoneDesc[] morphBoneStructs = morphStateComponent.morphs[i].MorphBones;
+                    float computedWeight = morphStateComponent.Weights.Computed[i];
+                    for (int j = 0; j < morphBoneStructs.Length; j++)
+                    {
+                        var morphBoneStruct = morphBoneStructs[j];
+                        bones[morphBoneStruct.BoneIndex].rotation *= Quaternion.Slerp(Quaternion.Identity, morphBoneStruct.Rotation, computedWeight);
+                        bones[morphBoneStruct.BoneIndex].dynamicPosition += morphBoneStruct.Translation * computedWeight;
+                    }
+                }
+            }
 
             for (int i = 0; i < bones.Count; i++)
             {
@@ -302,6 +319,8 @@ namespace MMDMotionCompute.MMD
 
         public void SetMotionTime(float time, MMDMotion motionComponent)
         {
+            morphStateComponent.SetPose(motionComponent, time);
+            morphStateComponent.ComputeWeight();
             foreach (var bone in bones)
             {
                 var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
@@ -435,6 +454,7 @@ namespace MMDMotionCompute.MMD
             charater.rigidBodyDescs = pmx.RigidBodies;
             charater.jointDescs = pmx.Joints;
             charater.BakeSequenceProcessMatrixsIndex();
+            charater.morphStateComponent = MorphStateComponent.LoadMorphStateComponent(pmx);
             return charater;
         }
 
@@ -715,6 +735,142 @@ namespace MMDMotionCompute.MMD
             result.Y = (float)(cx * sy * cz + sx * cy * sz);
             result.Z = (float)(cx * cy * sz - sx * sy * cz);
             return result;
+        }
+    }
+
+    public class MorphStateComponent
+    {
+        public List<MorphDesc> morphs = new List<MorphDesc>();
+        public WeightGroup Weights = new WeightGroup();
+
+        public const float c_frameInterval = 1 / 30.0f;
+        public Dictionary<string, int> stringMorphIndexMap = new Dictionary<string, int>();
+        public void SetPose(MMDMotion motionComponent, float time)
+        {
+            float currentTimeA = MathF.Floor(time / c_frameInterval) * c_frameInterval;
+            foreach (var pair in stringMorphIndexMap)
+            {
+                Weights.Origin[pair.Value] = motionComponent.GetMorphWeight(pair.Key, time);
+            }
+        }
+        public void SetPoseDefault()
+        {
+            foreach (var pair in stringMorphIndexMap)
+            {
+                Weights.Origin[pair.Value] = 0;
+            }
+        }
+
+        public void ComputeWeight()
+        {
+            ComputeWeight1(morphs, Weights);
+        }
+
+        private static void ComputeWeight1(IReadOnlyList<MorphDesc> morphs, WeightGroup weightGroup)
+        {
+            for (int i = 0; i < morphs.Count; i++)
+            {
+                weightGroup.ComputedPrev[i] = weightGroup.Computed[i];
+                weightGroup.Computed[i] = 0;
+            }
+            for (int i = 0; i < morphs.Count; i++)
+            {
+                MorphDesc morph = morphs[i];
+                if (morph.Type == PMX_MorphType.Group)
+                    ComputeWeightGroup(morphs, morph, weightGroup.Origin[i], weightGroup.Computed);
+                else
+                    weightGroup.Computed[i] += weightGroup.Origin[i];
+            }
+        }
+        private static void ComputeWeightGroup(IReadOnlyList<MorphDesc> morphs, MorphDesc morph, float rate, float[] computedWeights)
+        {
+            for (int i = 0; i < morph.SubMorphs.Length; i++)
+            {
+                PMX_MorphSubMorphDesc subMorphStruct = morph.SubMorphs[i];
+                MorphDesc subMorph = morphs[subMorphStruct.GroupIndex];
+                if (subMorph.Type == PMX_MorphType.Group)
+                    ComputeWeightGroup(morphs, subMorph, rate * subMorphStruct.Rate, computedWeights);
+                else
+                    computedWeights[subMorphStruct.GroupIndex] += rate * subMorphStruct.Rate;
+            }
+        }
+
+        public static MorphDesc GetMorphDesc(PMX_Morph desc)
+        {
+
+            return new MorphDesc()
+            {
+                Name = desc.Name,
+                NameEN = desc.NameEN,
+                Category = desc.Category,
+                Type = desc.Type,
+                MorphBones = desc.MorphBones,
+                MorphMaterials = desc.MorphMaterials,
+                MorphUVs = desc.MorphUVs,
+                MorphVertexs = desc.MorphVertexs,
+                SubMorphs = desc.SubMorphs,
+            };
+        }
+        public static MorphStateComponent LoadMorphStateComponent(PMXFormat pmx)
+        {
+            MorphStateComponent component = new MorphStateComponent();
+            component.Reload(pmx);
+            return component;
+        }
+
+        public void Reload(PMXFormat pmx)
+        {
+            MorphStateComponent component = this;
+            component.stringMorphIndexMap.Clear();
+            component.morphs.Clear();
+            int morphCount = pmx.Morphs.Count;
+            for (int i = 0; i < pmx.Morphs.Count; i++)
+            {
+                component.morphs.Add(GetMorphDesc(pmx.Morphs[i]));
+            }
+
+            void newWeightGroup(WeightGroup weightGroup)
+            {
+                weightGroup.Origin = new float[morphCount];
+                weightGroup.Computed = new float[morphCount];
+                weightGroup.ComputedPrev = new float[morphCount];
+            }
+            newWeightGroup(component.Weights);
+            for (int i = 0; i < morphCount; i++)
+            {
+                component.stringMorphIndexMap.Add(pmx.Morphs[i].Name, i);
+            }
+        }
+    }
+
+    public class WeightGroup
+    {
+        public float[] Origin;
+        public float[] Computed;
+        public float[] ComputedPrev;
+
+        public bool ComputedWeightNotEqualsPrev(int index)
+        {
+            return Computed[index] != ComputedPrev[index];
+        }
+    }
+
+    public class MorphDesc
+    {
+        public string Name;
+        public string NameEN;
+        public PMX_MorphCategory Category;
+        public PMX_MorphType Type;
+
+        public PMX_MorphSubMorphDesc[] SubMorphs;
+        public PMX_MorphVertexDesc[] MorphVertexs;
+        public PMX_MorphBoneDesc[] MorphBones;
+        public PMX_MorphUVDesc[] MorphUVs;
+        public PMX_MorphMaterialDesc[] MorphMaterials;
+
+        public override string ToString()
+        {
+            return string.Format("{0}", Name);
         }
     }
 }
