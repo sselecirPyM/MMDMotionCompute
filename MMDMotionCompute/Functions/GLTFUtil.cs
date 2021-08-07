@@ -43,12 +43,14 @@ namespace MMDMotionCompute.Functions
             var accessors = glTFWriterContext.accessors;
             if (true)
             {
-                writer.Write(MemoryMarshal.AsBytes<Vector3>(pmx.Vertices.Select(u => Vector3.Transform(u.Coordinate, exportTransform)).ToArray()));
-                glTFWriterContext.MarkBuf("_position", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3" });
-                writer.Write(MemoryMarshal.AsBytes<Vector3>(pmx.Vertices.Select(u => InvertX(u.Normal)).ToArray()));
-                glTFWriterContext.MarkBuf("_normal", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3" });
-                writer.Write(MemoryMarshal.AsBytes<Vector2>(pmx.Vertices.Select(u => u.UvCoordinate).ToArray()));
-                glTFWriterContext.MarkBuf("_uv", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC2" });
+                float[] min;
+                float[] max;
+                WriteVectors(pmx.Vertices.Select(u => Vector3.Transform(u.Coordinate, exportTransform)).ToArray(), writer, out min, out max);
+                glTFWriterContext.MarkBuf("_position", new GLTFBufferView { target = 34962 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3", min = min, max = max });
+                WriteVectors(pmx.Vertices.Select(u => InvertX(u.Normal)).ToArray(), writer, out min, out max);
+                glTFWriterContext.MarkBuf("_normal", new GLTFBufferView { target = 34962 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3", min = min, max = max });
+                WriteVectors(pmx.Vertices.Select(u => u.UvCoordinate).ToArray(), writer, out min, out max);
+                glTFWriterContext.MarkBuf("_uv", new GLTFBufferView { target = 34962 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC2", min = min, max = max });
 
                 var vertex = pmx.Vertices;
                 for (int i = 0; i < vertex.Length; i++)
@@ -58,10 +60,10 @@ namespace MMDMotionCompute.Functions
                     writer.Write((vertex[i].boneId2 >= 0) ? (short)vertex[i].boneId2 : (short)0);
                     writer.Write((vertex[i].boneId3 >= 0) ? (short)vertex[i].boneId3 : (short)0);
                 }
-                glTFWriterContext.MarkBuf("_joints", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5123, count = pmx.Vertices.Length, type = "VEC4" });
+                glTFWriterContext.MarkBuf("_joints", new GLTFBufferView { target = 34962 }, new GLTFAccessor { componentType = 5123, count = pmx.Vertices.Length, type = "VEC4" });
 
                 writer.Write(MemoryMarshal.AsBytes<Vector4>(pmx.Vertices.Select(u => u.Weights).ToArray()));
-                glTFWriterContext.MarkBuf("_weights", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC4" });
+                glTFWriterContext.MarkBuf("_weights", new GLTFBufferView { target = 34962 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC4" });
             }
             else
             {
@@ -109,10 +111,10 @@ namespace MMDMotionCompute.Functions
                         indices[j] = morph[j].VertexIndex;
                     }
                     bufferStream.Write(MemoryMarshal.Cast<int, byte>(indices));
-                    glTFWriterContext.MarkBuf(vertMorphs[i].Name + "/indices", new GLTFBufferView { target = 34963 }, null);
+                    glTFWriterContext.MarkBuf(vertMorphs[i].Name + "/indices", new GLTFBufferView { }, null);
 
-                    bufferStream.Write(MemoryMarshal.Cast<Vector3, byte>(morph.Select(u => Vector3.Transform(u.Offset, exportTransform)).ToArray()));
-                    glTFWriterContext.MarkBuf(vertMorphs[i].Name + "/position", new GLTFBufferView { target = 34963 }, null);
+                    WriteVectors(morph.Select(u => Vector3.Transform(u.Offset, exportTransform)).ToArray(), writer, out float[] min, out float[] max);
+                    glTFWriterContext.MarkBuf(vertMorphs[i].Name + "/position", new GLTFBufferView { }, null);
                     glTFWriterContext.accessors.Add(new GLTFAccessor
                     {
                         sparse = new GLTFAccessorSparse
@@ -125,7 +127,9 @@ namespace MMDMotionCompute.Functions
                         //byteOffset = 0,
                         count = pmx.Vertices.Length,
                         componentType = 5126,
-                        type = "VEC3"
+                        type = "VEC3",
+                        min = min,
+                        max = max,
                     });
 
                 }
@@ -134,10 +138,10 @@ namespace MMDMotionCompute.Functions
                     Vector3[] positons1 = new Vector3[pmx.Vertices.Length];
                     for (int j = 0; j < morph.Length; j++)
                     {
-                        positons1[morph[j].VertexIndex] = morph[j].Offset;
+                        positons1[morph[j].VertexIndex] = Vector3.Transform(morph[j].Offset, exportTransform);
                     }
-                    bufferStream.Write(MemoryMarshal.Cast<Vector3, byte>(positons1));
-                    glTFWriterContext.MarkBuf(vertMorphs[i].Name, new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3" });
+                    WriteVectors(positons1, writer, out float[] min, out float[] max);
+                    glTFWriterContext.MarkBuf(vertMorphs[i].Name, new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3", min = min, max = max });
                 }
 
             }
@@ -158,16 +162,17 @@ namespace MMDMotionCompute.Functions
                 {
                     boneKeyFrames[bone.Name] = new List<BoneKeyFrame>();
                 }
-                for (int t = 0; t < motion.lastFrame; t++)
+                int c_sampleCount = 2;
+                for (int t = 0; t < motion.lastFrame * c_sampleCount; t++)
                 {
-                    float time = t / 30.0f;
+                    float time = t / 30.0f / c_sampleCount;
                     if (options.physics)
                     {
                         if (t == 0)
                         {
                             void _reset()
                             {
-                                character.SetMotionTime(time - 1 / 60.0f, motion);
+                                character.SetMotionTime(time, motion);
                                 character.PrePhysicsSync(scene);
                                 character.ResetPhysics(scene);
                                 scene.Simulation(1 / 60.0);
@@ -177,14 +182,9 @@ namespace MMDMotionCompute.Functions
                             _reset();
                             _reset();
                         }
-                        character.SetMotionTime(time - 1 / 60.0f, motion);
+                        character.SetMotionTime(time - 1 / 30.0f / c_sampleCount, motion);
                         character.PrePhysicsSync(scene);
-                        scene.Simulation(1 / 60.0);
-                        character.PhysicsSync(scene);
-
-                        character.SetMotionTime(time, motion);
-                        character.PrePhysicsSync(scene);
-                        scene.Simulation(1 / 60.0);
+                        scene.Simulation(1 / 30.0 / c_sampleCount);
                         character.PhysicsSync(scene);
                     }
                     else
@@ -214,7 +214,7 @@ namespace MMDMotionCompute.Functions
                     }
 
                     foreach (var keyFrame in keyFrames.Value)
-                        writer.Write(keyFrame.Frame / 30.0f);
+                        writer.Write(keyFrame.Frame / 30.0f / c_sampleCount);
                     glTFWriterContext.MarkBuf(keyFrames.Key + "/_keyFrameTime", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = keyFrames.Value.Count, type = "SCALAR" });
 
                     foreach (var keyFrame in keyFrames.Value)
@@ -435,39 +435,48 @@ namespace MMDMotionCompute.Functions
             return new Vector3(-vec3.X, vec3.Y, vec3.Z);
         }
 
-        //static BufferBytes WriteVectors(IEnumerable<Vector3> vectors, Stream stream)
-        //{
-        //    int offset = (int)stream.Position;
-        //    float[] min = new float[3];
-        //    float[] max = new float[3];
+        static void WriteVectors(Vector3[] vec3s, BinaryWriterPlus writer, out float[] min, out float[] max)
+        {
+            writer.Write(MemoryMarshal.Cast<Vector3, byte>(vec3s));
+            min = new float[3];
+            max = new float[3];
 
-        //    byte[] buffer1 = new byte[16];
+            min[0] = vec3s[0].X;
+            min[1] = vec3s[0].Y;
+            min[2] = vec3s[0].Z;
+            max[0] = vec3s[0].X;
+            max[1] = vec3s[0].Y;
+            max[2] = vec3s[0].Z;
 
-        //    const int sizeofVec3 = 12;
+            for (int i = 0; i < vec3s.Length; i++)
+            {
+                min[0] = Math.Min(vec3s[i].X, min[0]);
+                min[1] = Math.Min(vec3s[i].Y, min[1]);
+                min[2] = Math.Min(vec3s[i].Z, min[2]);
+                max[0] = Math.Max(vec3s[i].X, max[0]);
+                max[1] = Math.Max(vec3s[i].Y, max[1]);
+                max[2] = Math.Max(vec3s[i].Z, max[2]);
+            }
+        }
 
-        //    {
-        //        var vector1 = vectors.First();
-        //        min[0] = Math.Min(vector1.X, min[0]);
-        //        min[1] = Math.Min(vector1.Y, min[1]);
-        //        min[2] = Math.Min(vector1.Z, min[2]);
-        //        max[0] = Math.Max(vector1.X, max[0]);
-        //        max[1] = Math.Max(vector1.Y, max[1]);
-        //        max[2] = Math.Max(vector1.Z, max[2]);
-        //    }
-        //    foreach (var vector in vectors)
-        //    {
-        //        var vector1 = vector;
-        //        min[0] = Math.Min(vector1.X, min[0]);
-        //        min[1] = Math.Min(vector1.Y, min[1]);
-        //        min[2] = Math.Min(vector1.Z, min[2]);
-        //        max[0] = Math.Max(vector1.X, max[0]);
-        //        max[1] = Math.Max(vector1.Y, max[1]);
-        //        max[2] = Math.Max(vector1.Z, max[2]);
-        //        MemoryMarshal.Write(buffer1, ref vector1);
-        //        stream.Write(buffer1, 0, sizeofVec3);
-        //    }
+        static void WriteVectors(Vector2[] vec2s, BinaryWriterPlus writer, out float[] min, out float[] max)
+        {
+            writer.Write(MemoryMarshal.Cast<Vector2, byte>(vec2s));
+            min = new float[2];
+            max = new float[2];
 
-        //    return new BufferBytes() { offset = offset, size = (int)stream.Position - offset, min = min, max = max, };
-        //}
+            min[0] = vec2s[0].X;
+            min[1] = vec2s[0].Y;
+            max[0] = vec2s[0].X;
+            max[1] = vec2s[0].Y;
+
+            for (int i = 0; i < vec2s.Length; i++)
+            {
+                min[0] = Math.Min(vec2s[i].X, min[0]);
+                min[1] = Math.Min(vec2s[i].Y, min[1]);
+                max[0] = Math.Max(vec2s[i].X, max[0]);
+                max[1] = Math.Max(vec2s[i].Y, max[1]);
+            }
+        }
     }
 }
