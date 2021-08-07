@@ -9,6 +9,7 @@ namespace MMDMotionCompute.Functions
     public class ExportOptions
     {
         public float frameRate = 30;
+        public float exportScale = 0.08f;
         public bool sparseMorph;
         public bool physics = true;
     }

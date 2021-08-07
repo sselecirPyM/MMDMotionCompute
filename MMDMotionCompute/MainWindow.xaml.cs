@@ -40,9 +40,16 @@ namespace MMDMotionCompute
             openFileDialog.Title = "open";
             if (openFileDialog.ShowDialog() == true)
             {
-                pmx = PMXFormat.Load(new BinaryReader(File.OpenRead(openFileDialog.FileName)));
-                showPath.Text = openFileDialog.FileName;
-                imagePath = Path.GetDirectoryName(openFileDialog.FileName);
+                try
+                {
+                    pmx = PMXFormat.Load(new BinaryReader(File.OpenRead(openFileDialog.FileName)));
+                    showPath.Text = openFileDialog.FileName;
+                    imagePath = Path.GetDirectoryName(openFileDialog.FileName);
+                }
+                catch (Exception exception)
+                {
+                    MessageBox.Show(exception.ToString());
+                }
             }
         }
 
@@ -52,15 +59,22 @@ namespace MMDMotionCompute
             openFileDialog.Filter = "vmd|*.vmd";
             if (openFileDialog.ShowDialog() == true)
             {
-                vmd = VMDFormat.Load(new BinaryReader(File.OpenRead(openFileDialog.FileName)));
-                showVmdPath.Text = openFileDialog.FileName;
-                imagePath = Path.GetDirectoryName(openFileDialog.FileName);
+                try
+                {
+                    vmd = VMDFormat.Load(new BinaryReader(File.OpenRead(openFileDialog.FileName)));
+                    showVmdPath.Text = openFileDialog.FileName;
+                }
+                catch (Exception exception)
+                {
+                    MessageBox.Show(exception.ToString());
+                }
             }
         }
         string imagePath;
 
         public bool physics { get; set; } = true;
         public bool sparseMorph { get; set; } = true;
+        public float exportScale { get; set; } = 0.08f;
 
         private void Button_Export(object sender, RoutedEventArgs e)
         {
@@ -69,7 +83,14 @@ namespace MMDMotionCompute
             saveFileDialog.Title = "save";
             if (saveFileDialog.ShowDialog() == true)
             {
-                GLTFUtil.SaveAsGLTF2(pmx, vmd, new ExportOptions() { physics = physics, sparseMorph = sparseMorph }, saveFileDialog.FileName);
+                try
+                {
+                    GLTFUtil.SaveAsGLTF2(pmx, vmd, new ExportOptions() { physics = physics, sparseMorph = sparseMorph, exportScale = exportScale }, saveFileDialog.FileName);
+                }
+                catch (Exception exception)
+                {
+                    MessageBox.Show(exception.ToString());
+                }
             }
         }
     }

@@ -23,6 +23,10 @@
             </StackPanel>
             <CheckBox Content="物理模拟" IsChecked="{Binding ElementName=_thisPage,Path=physics,Mode=TwoWay}"/>
             <CheckBox Content="稀疏顶点变形" IsChecked="{Binding ElementName=_thisPage,Path=sparseMorph,Mode=TwoWay}"/>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock>导出缩放：</TextBlock>
+                <TextBox Width="200" Text="{Binding ElementName=_thisPage,Path=exportScale,Mode=TwoWay}"/>
+            </StackPanel>
         </StackPanel>
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>

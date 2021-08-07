@@ -21,6 +21,7 @@ namespace MMDMotionCompute.Functions
         {
             GLTFWriterContext glTFWriterContext = new GLTFWriterContext();
             var vertMorphs = pmx.Morphs.Where(u => u.MorphVertexs != null).ToArray();
+            Matrix4x4 exportTransform = Matrix4x4.CreateScale(-1, 1, 1) * Matrix4x4.CreateScale(0.08f);
 
             Dictionary<string, int> name2Bone = new Dictionary<string, int>();
             for (int i = 0; i < pmx.Bones.Count; i++)
@@ -42,9 +43,9 @@ namespace MMDMotionCompute.Functions
             var accessors = glTFWriterContext.accessors;
             if (true)
             {
-                writer.Write(MemoryMarshal.AsBytes<Vector3>(pmx.Vertices.Select(u => u.Coordinate).ToArray()));
+                writer.Write(MemoryMarshal.AsBytes<Vector3>(pmx.Vertices.Select(u => Vector3.Transform(u.Coordinate, exportTransform)).ToArray()));
                 glTFWriterContext.MarkBuf("_position", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3" });
-                writer.Write(MemoryMarshal.AsBytes<Vector3>(pmx.Vertices.Select(u => u.Normal).ToArray()));
+                writer.Write(MemoryMarshal.AsBytes<Vector3>(pmx.Vertices.Select(u => InvertX(u.Normal)).ToArray()));
                 glTFWriterContext.MarkBuf("_normal", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC3" });
                 writer.Write(MemoryMarshal.AsBytes<Vector2>(pmx.Vertices.Select(u => u.UvCoordinate).ToArray()));
                 glTFWriterContext.MarkBuf("_uv", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = pmx.Vertices.Length, type = "VEC2" });
@@ -64,7 +65,7 @@ namespace MMDMotionCompute.Functions
             }
             else
             {
-                WriteVertex(writer, pmx.Vertices);
+                WriteVertex(writer, pmx.Vertices, exportTransform);
 
                 glTFWriterContext.MarkBuf("_vertex", new GLTFBufferView { byteStride = vertexStride, target = 34962 }, null);
                 accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 0, count = pmx.Vertices.Length, type = "VEC3" });
@@ -73,7 +74,15 @@ namespace MMDMotionCompute.Functions
                 accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5123, byteOffset = 32, count = pmx.Vertices.Length, type = "VEC4" });
                 accessors.Add(new GLTFAccessor { bufferView = 0, componentType = 5126, byteOffset = 40, count = pmx.Vertices.Length, type = "VEC4" });
             }
-            writer.Write(MemoryMarshal.AsBytes<int>(pmx.TriangleIndexs));
+            int[] indexArray = pmx.TriangleIndexs.ToArray();
+            for (int i = 0; i < indexArray.Length - 2; i += 3)
+            {
+                int t1 = indexArray[i + 1];
+                int t2 = indexArray[i + 2];
+                indexArray[i + 1] = t2;
+                indexArray[i + 2] = t1;
+            }
+            writer.Write(MemoryMarshal.AsBytes<int>(indexArray));
             glTFWriterContext.MarkBuf("_index", new GLTFBufferView { target = 34963 }, null);
             glTFWriterContext.StartWriteAccessorMark("material");
             for (int i = 0; i < pmx.Materials.Count; i++)
@@ -84,8 +93,7 @@ namespace MMDMotionCompute.Functions
 
             for (int i = 0; i < pmx.Bones.Count; i++)
             {
-                Matrix4x4 mat = Matrix4x4.CreateTranslation(-pmx.Bones[i].Position);
-                writer.Write(mat);
+                writer.Write(Matrix4x4.CreateTranslation(Vector3.Transform(-pmx.Bones[i].Position, exportTransform)));
             }
             glTFWriterContext.MarkBuf("_inverseBindMatrices", new GLTFBufferView { target = 34963, }, new GLTFAccessor { componentType = 5126, count = pmx.Bones.Count, type = "MAT4" });
 
@@ -103,12 +111,7 @@ namespace MMDMotionCompute.Functions
                     bufferStream.Write(MemoryMarshal.Cast<int, byte>(indices));
                     glTFWriterContext.MarkBuf(vertMorphs[i].Name + "/indices", new GLTFBufferView { target = 34963 }, null);
 
-                    Vector3[] position1 = new Vector3[morph.Length];
-                    for (int j = 0; j < morph.Length; j++)
-                    {
-                        position1[j] = morph[j].Offset;
-                    }
-                    bufferStream.Write(MemoryMarshal.Cast<Vector3, byte>(position1));
+                    bufferStream.Write(MemoryMarshal.Cast<Vector3, byte>(morph.Select(u => Vector3.Transform(u.Offset, exportTransform)).ToArray()));
                     glTFWriterContext.MarkBuf(vertMorphs[i].Name + "/position", new GLTFBufferView { target = 34963 }, null);
                     glTFWriterContext.accessors.Add(new GLTFAccessor
                     {
@@ -215,11 +218,13 @@ namespace MMDMotionCompute.Functions
                     glTFWriterContext.MarkBuf(keyFrames.Key + "/_keyFrameTime", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = keyFrames.Value.Count, type = "SCALAR" });
 
                     foreach (var keyFrame in keyFrames.Value)
-                        writer.Write(keyFrame.rotation);
+                    {
+                        writer.Write(new Quaternion(keyFrame.rotation.X, -keyFrame.rotation.Y, -keyFrame.rotation.Z, keyFrame.rotation.W));
+                    }
                     glTFWriterContext.MarkBuf(keyFrames.Key + "/_keyFrameRotation", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = keyFrames.Value.Count, type = "VEC4" });
 
                     foreach (var keyFrame in keyFrames.Value)
-                        writer.Write(keyFrame.Translation + relatePosition);
+                        writer.Write(Vector3.Transform(keyFrame.Translation + relatePosition, exportTransform));
                     glTFWriterContext.MarkBuf(keyFrames.Key + "/_keyFrameTranslation", new GLTFBufferView { target = 34963 }, new GLTFAccessor { componentType = 5126, count = keyFrames.Value.Count, type = "VEC3" });
                 }
 
@@ -273,6 +278,7 @@ namespace MMDMotionCompute.Functions
                 {
                     relatePosition -= pmx.Bones[bone.ParentIndex].Position;
                 }
+                relatePosition = Vector3.Transform(relatePosition, exportTransform);
                 node.translation = new float[3] { relatePosition.X, relatePosition.Y, relatePosition.Z, };
             }
             {
@@ -409,12 +415,12 @@ namespace MMDMotionCompute.Functions
             File.WriteAllBytes(path, data);
 
         }
-        static void WriteVertex(BinaryWriterPlus writer, PMX_Vertex[] vertex)
+        static void WriteVertex(BinaryWriterPlus writer, PMX_Vertex[] vertex, Matrix4x4 exportTransform)
         {
             for (int i = 0; i < vertex.Length; i++)
             {
-                writer.Write(vertex[i].Coordinate);
-                writer.Write(vertex[i].Normal);
+                writer.Write(Vector3.Transform(vertex[i].Coordinate, exportTransform));
+                writer.Write(InvertX(vertex[i].Normal));
                 writer.Write(vertex[i].UvCoordinate);
                 writer.Write((vertex[i].boneId0 >= 0) ? (short)vertex[i].boneId0 : (short)0);
                 writer.Write((vertex[i].boneId1 >= 0) ? (short)vertex[i].boneId1 : (short)0);
@@ -422,6 +428,11 @@ namespace MMDMotionCompute.Functions
                 writer.Write((vertex[i].boneId3 >= 0) ? (short)vertex[i].boneId3 : (short)0);
                 writer.Write(vertex[i].Weights);
             }
+        }
+
+        static Vector3 InvertX(Vector3 vec3)
+        {
+            return new Vector3(-vec3.X, vec3.Y, vec3.Z);
         }
 
         //static BufferBytes WriteVectors(IEnumerable<Vector3> vectors, Stream stream)
