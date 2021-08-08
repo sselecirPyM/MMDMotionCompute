@@ -75,6 +75,7 @@ namespace MMDMotionCompute
         public bool physics { get; set; } = true;
         public bool sparseMorph { get; set; } = true;
         public float exportScale { get; set; } = 0.08f;
+        public float gravity { get; set; } = 100f;
 
         private void Button_Export(object sender, RoutedEventArgs e)
         {
@@ -85,7 +86,7 @@ namespace MMDMotionCompute
             {
                 try
                 {
-                    GLTFUtil.SaveAsGLTF2(pmx, vmd, new ExportOptions() { physics = physics, sparseMorph = sparseMorph, exportScale = exportScale }, saveFileDialog.FileName);
+                    GLTFUtil.SaveAsGLTF2(pmx, vmd, new ExportOptions() { physics = physics, sparseMorph = sparseMorph, exportScale = exportScale, gravity = gravity }, saveFileDialog.FileName);
                 }
                 catch (Exception exception)
                 {

@@ -161,6 +161,7 @@ namespace MMDMotionCompute.Functions
                 if (options.physics)
                 {
                     scene.Initialize();
+                    scene.SetGravitation(new Vector3(0, -options.gravity, 0));
                     character.AddPhysics(scene);
                 }
                 foreach (var bone in character.bones)
@@ -393,6 +394,7 @@ namespace MMDMotionCompute.Functions
             }
             gltfModel.bufferViews = bufferViews.ToArray();
             gltfModel.accessors = accessors.ToArray();
+            gltfModel.asset.generator = "MMDMotionCompute";
 
             int startMaterialAccessor = glTFWriterContext.accessorStart["material"];
             int startMorph = glTFWriterContext.accessorStart["morph"];

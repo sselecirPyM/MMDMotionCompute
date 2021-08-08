@@ -12,5 +12,6 @@ namespace MMDMotionCompute.Functions
         public float exportScale = 0.08f;
         public bool sparseMorph;
         public bool physics = true;
+        public float gravity = 100f;
     }
 }

@@ -27,6 +27,10 @@
                 <TextBlock>导出缩放：</TextBlock>
                 <TextBox Width="200" Text="{Binding ElementName=_thisPage,Path=exportScale,Mode=TwoWay}"/>
             </StackPanel>
+            <StackPanel Orientation="Horizontal">
+                <TextBlock>重力：</TextBlock>
+                <TextBox Width="200" Text="{Binding ElementName=_thisPage,Path=gravity,Mode=TwoWay}"/>
+            </StackPanel>
         </StackPanel>
         <Grid Grid.Column="1">
             <Grid.RowDefinitions>
