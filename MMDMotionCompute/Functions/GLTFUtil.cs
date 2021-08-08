@@ -199,7 +199,7 @@ namespace MMDMotionCompute.Functions
 
                     foreach (var bone in character.bones)
                     {
-                        boneKeyFrames[bone.Name].Add(new BoneKeyFrame { Frame = t, Translation = bone.dynamicPosition, Rotation = bone.rotation });
+                        boneKeyFrames[bone.Name].Add(new BoneKeyFrame { Frame = t, Translation = bone.dynamicPosition, Rotation = bone.finalRotation });
                     }
                 }
                 float[] min;

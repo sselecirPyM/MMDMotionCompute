@@ -151,7 +151,6 @@ namespace MMDMotionCompute.MMD
                     continue;
                 var parent = bones[bones[i].ParentIndex];
                 bonesTest[i] |= bonesTest[bones[i].ParentIndex];
-                bonesTest[i] |= parent.IsPhysicsFreeBone;
                 if (bonesTest[i])
                 {
                     PhysicsNeedUpdateMatIndexs.Add(i);
@@ -402,7 +401,6 @@ namespace MMDMotionCompute.MMD
                     Name = _bone.Name,
                     Flags = _bone.Flags,
                     NameEN = _bone.NameEN,
-
                 };
 
                 if (bone.Flags.HasFlag(PMX_BoneFlag.HasIK))
@@ -473,6 +471,7 @@ namespace MMDMotionCompute.MMD
             public Vector3 appendTranslation;
             public Quaternion appendRotation = Quaternion.Identity;
             public int index;
+            public Quaternion finalRotation { get => rotation * appendRotation; }
 
             public int CCDIterateLimit = 0;
             public float CCDAngleLimit = 0;
@@ -484,7 +483,6 @@ namespace MMDMotionCompute.MMD
             public string NameEN;
             public bool IsAppendRotation;
             public bool IsAppendTranslation;
-            public bool IsPhysicsFreeBone;
             public PMX_BoneFlag Flags;
             public IKLink[] boneIKLinks;
             public float AppendRatio;
