@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace MMDMotionCompute.MMD
 {
-    enum PMX_BoneWeightDeformType
+    public enum PMX_BoneWeightDeformType
     {
         BDEF1 = 0,
         BDEF2 = 1,
@@ -78,6 +78,11 @@ namespace MMDMotionCompute.MMD
         {
             return string.Format("{0}", Name);
         }
+
+        public PMX_Material Clone()
+        {
+            return (PMX_Material)this.MemberwiseClone();
+        }
     }
 
     public enum PMX_BoneFlag
@@ -136,6 +141,10 @@ namespace MMDMotionCompute.MMD
         public override string ToString()
         {
             return string.Format("{0}", Name);
+        }
+        public PMX_Bone CLone()
+        {
+            return (PMX_Bone)this.CLone();
         }
     }
 
@@ -309,6 +318,22 @@ namespace MMDMotionCompute.MMD
         {
             return string.Format("{0}", Name);
         }
+        public PMX_Morph Clone()
+        {
+            PMX_Morph morph = (PMX_Morph)this.MemberwiseClone();
+            if (SubMorphs != null)
+                morph.SubMorphs = SubMorphs.ToArray();
+            if (MorphVertexs != null)
+                morph.MorphVertexs = MorphVertexs.ToArray();
+            if (MorphBones != null)
+                morph.MorphBones = MorphBones.ToArray();
+            if (MorphUVs != null)
+                morph.MorphUVs = MorphUVs.ToArray();
+            if (MorphMaterials != null)
+                morph.MorphMaterials = MorphMaterials.ToArray();
+
+            return morph;
+        }
     }
 
     public class PMX_Joint
@@ -329,6 +354,10 @@ namespace MMDMotionCompute.MMD
         public override string ToString()
         {
             return string.Format("{0}", Name);
+        }
+        public PMX_Joint Clone()
+        {
+            return (PMX_Joint)this.MemberwiseClone();
         }
     }
 
@@ -368,6 +397,10 @@ namespace MMDMotionCompute.MMD
         {
             return string.Format("{0}", Name);
         }
+        public PMX_RigidBody Clone()
+        {
+            return (PMX_RigidBody)this.MemberwiseClone();
+        }
     }
 
     public struct PMX_EntryElement
@@ -401,6 +434,10 @@ namespace MMDMotionCompute.MMD
         public override string ToString()
         {
             return string.Format("{0}", Name);
+        }
+        public PMX_Entry Clone()
+        {
+            return (PMX_Entry)this.MemberwiseClone();
         }
     }
 
@@ -673,7 +710,7 @@ namespace MMDMotionCompute.MMD
                             vertexStruct.Offset = ReadVector3(reader);
                             morph.MorphVertexs[j] = vertexStruct;
                         }
-                        Array.Sort(morph.MorphVertexs, _morphVertexCmp);//optimize for cpu L1 cache
+                        Array.Sort(morph.MorphVertexs, (x, y) => x.VertexIndex.CompareTo(y.VertexIndex));//optimize for cpu L1 cache
                         break;
                     case PMX_MorphType.Bone:
                         morph.MorphBones = new PMX_MorphBoneDesc[countOfMorphData];
@@ -797,11 +834,6 @@ namespace MMDMotionCompute.MMD
 
                 Joints.Add(joint);
             }
-        }
-
-        private int _morphVertexCmp(PMX_MorphVertexDesc x, PMX_MorphVertexDesc y)
-        {
-            return x.VertexIndex.CompareTo(y.VertexIndex);
         }
 
         private int ReadIndex(BinaryReader reader, int size)

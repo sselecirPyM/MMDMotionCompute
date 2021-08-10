@@ -57,6 +57,7 @@ namespace MMDMotionCompute.MMD
             }
             UpdateMatrices(PhysicsNeedUpdateMatIndexs);
 
+            UpdateAppendBones();
             for (int i = 0; i < rigidBodyDescs.Count; i++)
             {
                 var desc = rigidBodyDescs[i];
@@ -78,7 +79,6 @@ namespace MMDMotionCompute.MMD
                 bones[index].dynamicPosition = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1) + parentStaticPosition - bones[index].staticPosition;
                 bones[index].rotation = rot / rot1;
             }
-            UpdateAppendBones();
         }
 
         public void ResetPhysics(PhysicsScene physics3DScene)
@@ -322,6 +322,8 @@ namespace MMDMotionCompute.MMD
             morphStateComponent.ComputeWeight();
             foreach (var bone in bones)
             {
+                bone.appendTranslation = Vector3.Zero;
+                bone.appendRotation = Quaternion.Identity;
                 var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
                 bone.rotation = keyframe.rotation;
                 bone.dynamicPosition = keyframe.translation;
