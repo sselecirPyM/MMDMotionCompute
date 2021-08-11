@@ -77,7 +77,7 @@ namespace MMDMotionCompute.MMD
                 }
 
                 bones[index].dynamicPosition = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1) + parentStaticPosition - bones[index].staticPosition;
-                bones[index].rotation = rot / rot1;
+                bones[index].rotation = Quaternion.Identity / rot1 * rot;
             }
         }
 
