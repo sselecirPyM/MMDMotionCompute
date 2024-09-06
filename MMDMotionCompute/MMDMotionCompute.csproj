@@ -2,12 +2,12 @@
 
   <PropertyGroup>
     <OutputType>WinExe</OutputType>
-    <TargetFramework>net5.0-windows</TargetFramework>
+    <TargetFramework>net8.0-windows</TargetFramework>
     <UseWPF>true</UseWPF>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="BulletSharp.x64" Version="0.12.0" />
+    <ProjectReference Include="..\MMDMC\MMDMC.csproj" />
   </ItemGroup>
 
 </Project>

@@ -11,11 +11,11 @@ using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using System.Windows.Navigation;
-//using System.Windows.Shapes;
-using MMDMotionCompute.MMD;
+using MMDMC.MMD;
 using Microsoft.Win32;
 using System.IO;
-using MMDMotionCompute.Functions;
+using MMDMC.Functions;
+using MMDMC;
 
 namespace MMDMotionCompute
 {
@@ -82,17 +82,20 @@ namespace MMDMotionCompute
             SaveFileDialog saveFileDialog = new SaveFileDialog();
             saveFileDialog.Filter = "gltf2|*.gltf";
             saveFileDialog.Title = "save";
+            System.Diagnostics.Stopwatch stopwatch = System.Diagnostics.Stopwatch.StartNew();
             if (saveFileDialog.ShowDialog() == true)
             {
                 try
                 {
-                    GLTFUtil.SaveAsGLTF2(pmx, vmd, new ExportOptions() { physics = physics, sparseMorph = sparseMorph, exportScale = exportScale, gravity = gravity }, saveFileDialog.FileName);
+                    GLTFUtil.SaveAsGLTF2(pmx, vmd, new ExportOptions() { usePhysics = physics, sparseMorph = sparseMorph, exportScale = exportScale, gravity = gravity }, saveFileDialog.FileName);
                 }
                 catch (Exception exception)
                 {
                     MessageBox.Show(exception.ToString());
                 }
             }
+            stopwatch.Stop();
+            timecost.Text = stopwatch.Elapsed.ToString();
         }
     }
 }

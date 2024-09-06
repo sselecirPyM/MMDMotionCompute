@@ -1,9 +1,11 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 16
-VisualStudioVersion = 16.0.31402.337
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35122.118
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMDMotionCompute", "MMDMotionCompute\MMDMotionCompute.csproj", "{13DFE1D5-F5F5-47E6-9316-135D4D3C1F17}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "MMDMotionCompute", "MMDMotionCompute\MMDMotionCompute.csproj", "{13DFE1D5-F5F5-47E6-9316-135D4D3C1F17}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "MMDMC", "MMDMC\MMDMC.csproj", "{0CB052AE-1C0C-4423-AE5D-57AB3A90DAA8}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -15,6 +17,10 @@ Global
 		{13DFE1D5-F5F5-47E6-9316-135D4D3C1F17}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{13DFE1D5-F5F5-47E6-9316-135D4D3C1F17}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{13DFE1D5-F5F5-47E6-9316-135D4D3C1F17}.Release|Any CPU.Build.0 = Release|Any CPU
+		{0CB052AE-1C0C-4423-AE5D-57AB3A90DAA8}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0CB052AE-1C0C-4423-AE5D-57AB3A90DAA8}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0CB052AE-1C0C-4423-AE5D-57AB3A90DAA8}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0CB052AE-1C0C-4423-AE5D-57AB3A90DAA8}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
