@@ -1,8 +1,12 @@
-﻿namespace MMDMC.GLTF
+﻿using MMDMC.GLTF.Converters;
+using System.Text.Json.Serialization;
+
+namespace MMDMC.GLTF
 {
-    public class GLTFAccessor
+    public class GLTFAccessor : IndexableObject
     {
-        public int? bufferView { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFBufferView bufferView { get; set; }
         public int? byteOffset { get; set; }
         public int componentType { get; set; }
         public bool? normalized { get; set; }
@@ -12,5 +16,8 @@
         public float[] min { get; set; }
         public string name { get; set; }
         public GLTFAccessorSparse sparse { get; set; }
+
+        [JsonIgnore]
+        public int _Index { get; set; }
     }
 }

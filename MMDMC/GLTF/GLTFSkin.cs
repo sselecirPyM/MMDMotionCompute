@@ -1,10 +1,21 @@
-﻿namespace MMDMC.GLTF
+﻿using MMDMC.GLTF.Converters;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
+
+namespace MMDMC.GLTF
 {
-    public class GLTFSkin
+    public class GLTFSkin : IndexableObject
     {
         public string name { get; set; }
-        public int? inverseBindMatrices { get; set; }
-        public int[] joints { get; set; }
-        public int? skeleton { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFAccessor inverseBindMatrices { get; set; }
+
+        [JsonConverter(typeof(IndexableConverterArray))]
+        public List<GLTFNode> joints { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFNode skeleton { get; set; }
+
+        [JsonIgnore]
+        public int _Index { get; set; }
     }
 }

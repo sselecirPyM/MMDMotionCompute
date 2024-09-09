@@ -1,8 +1,12 @@
-﻿namespace MMDMC.GLTF
+﻿using MMDMC.GLTF.Converters;
+using System.Text.Json.Serialization;
+
+namespace MMDMC.GLTF
 {
     public class GLTFAnimationChannel
     {
-        public int sampler { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFAnimationSampler sampler { get; set; }
         public GLTFAnimationChannelTarget target { get; set; }
     }
 }

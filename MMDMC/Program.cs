@@ -2,6 +2,7 @@
 using MMDMC.Functions;
 using MMDMC.MMD;
 using System;
+using System.Diagnostics;
 using System.IO;
 
 namespace MMDMC
@@ -15,6 +16,7 @@ namespace MMDMC
 
         static void Run(ExportOptions args)
         {
+            //Debugger.Launch();
             PMXFormat pmx;
             VMDFormat vmd = null;
 

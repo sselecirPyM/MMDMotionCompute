@@ -1,9 +1,17 @@
-﻿namespace MMDMC.GLTF
+﻿using MMDMC.GLTF.Converters;
+using System.Text.Json.Serialization;
+
+namespace MMDMC.GLTF
 {
-    public class GLTFAnimationSampler
+    public class GLTFAnimationSampler : IndexableObject
     {
-        public int input { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFAccessor input { get; set; }
         public string interpolation { get; set; }
-        public int output { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFAccessor output { get; set; }
+
+        [JsonIgnore]
+        public int _Index { get; set; }
     }
 }

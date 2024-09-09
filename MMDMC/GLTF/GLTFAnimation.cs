@@ -1,4 +1,6 @@
-﻿namespace MMDMC.GLTF
+﻿using System.Text.Json.Serialization;
+
+namespace MMDMC.GLTF
 {
     public class GLTFAnimation
     {

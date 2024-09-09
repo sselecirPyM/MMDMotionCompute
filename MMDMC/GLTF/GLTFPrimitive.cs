@@ -1,13 +1,21 @@
-﻿using System.Collections.Generic;
+﻿using MMDMC.GLTF.Converters;
+using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace MMDMC.GLTF
 {
     public class GLTFPrimitive
     {
-        public Dictionary<string, int> attributes { get; set; }
-        public Dictionary<string, int>[] targets { get; set; }
-        public int indices { get; set; }
-        public int material { get; set; }
+        [JsonConverter(typeof(IndexableConverterDictionary<string, GLTFAccessor>))]
+        public Dictionary<string, GLTFAccessor> attributes { get; set; }
+
+        [JsonConverter(typeof(IndexableConverterArray2<string, GLTFAccessor>))]
+        public Dictionary<string, GLTFAccessor>[] targets { get; set; }
+
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFAccessor indices { get; set; }
+        [JsonConverter(typeof(IndexableConverter))]
+        public GLTFMaterial material { get; set; }
         public int? mode { get; set; }
         public string name { get; set; }
     }

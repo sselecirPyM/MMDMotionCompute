@@ -58,9 +58,11 @@ namespace MMDMC.MMD
             for (int i = 0; i < rigidBodyDescs.Count; i++)
             {
                 var desc = rigidBodyDescs[i];
-                if (desc.Type == 0) continue;
+                if (desc.Type == 0)
+                    continue;
                 int index = desc.AssociatedBoneIndex;
-                if (index == -1) continue;
+                if (index == -1)
+                    continue;
                 bones[index].GetPosRot2(out Vector3 pos, out Quaternion rot);
                 Vector3 pos1 = new Vector3();
                 Quaternion rot1 = Quaternion.Identity;
@@ -73,7 +75,7 @@ namespace MMDMC.MMD
                     parentStaticPosition = bones[parent].staticPosition;
                 }
 
-                bones[index].dynamicPosition = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1) + parentStaticPosition - bones[index].staticPosition;
+                bones[index].translation = Vector3.Transform(pos - pos1, Quaternion.Identity / rot1) + parentStaticPosition - bones[index].staticPosition;
                 bones[index].rotation = Quaternion.Identity / rot1 * rot;
             }
         }
@@ -184,9 +186,14 @@ namespace MMDMC.MMD
                     Vector3 targetDirection = Vector3.Normalize(itPosition - posTarget);
                     Vector3 ikDirection = Vector3.Normalize(itPosition - posSource);
                     float dotV = Math.Clamp(Vector3.Dot(targetDirection, ikDirection), -1, 1);
+                    float angle1 = (float)Math.Acos(dotV);
+                    if (Math.Abs(angle1) < 1e-3f)
+                    {
+                        continue;
+                    }
 
                     Matrix4x4 matXi = Matrix4x4.Transpose(itEntity.GeneratedTransform);
-                    Vector3 ikRotateAxis = SafeNormalize(Vector3.TransformNormal(Vector3.Cross(targetDirection, ikDirection), matXi));
+                    Vector3 ikRotateAxis = Vector3.Normalize(Vector3.TransformNormal(Vector3.Cross(targetDirection, ikDirection), matXi));
 
                     //if (axis_lim)
                     //    switch (IKLINK.FixTypes)
@@ -275,10 +282,9 @@ namespace MMDMC.MMD
                 if (bone.IsAppendTranslation || bone.IsAppendRotation)
                 {
                     var mat1 = bones[bone.AppendParentIndex].GeneratedTransform;
-                    Matrix4x4.Decompose(mat1, out _, out var rotation, out var translation);
                     if (bone.IsAppendTranslation)
                     {
-                        bone.appendTranslation = translation * bone.AppendRatio;
+                        bone.appendTranslation = bones[bone.AppendParentIndex].translation * bone.AppendRatio;
                     }
                     if (bone.IsAppendRotation)
                     {
@@ -301,7 +307,7 @@ namespace MMDMC.MMD
                     {
                         var morphBoneStruct = morphBoneStructs[j];
                         bones[morphBoneStruct.BoneIndex].rotation *= Quaternion.Slerp(Quaternion.Identity, morphBoneStruct.Rotation, computedWeight);
-                        bones[morphBoneStruct.BoneIndex].dynamicPosition += morphBoneStruct.Translation * computedWeight;
+                        bones[morphBoneStruct.BoneIndex].translation += morphBoneStruct.Translation * computedWeight;
                     }
                 }
             }
@@ -323,7 +329,7 @@ namespace MMDMC.MMD
                 bone.appendRotation = Quaternion.Identity;
                 var keyframe = motionComponent.GetBoneMotion(bone.Name, time);
                 bone.rotation = keyframe.rotation;
-                bone.dynamicPosition = keyframe.translation;
+                bone.translation = keyframe.translation;
                 //cachedBoneKeyFrames[bone.index] = keyframe;
             }
             UpdateAllMatrix();
@@ -455,16 +461,9 @@ namespace MMDMC.MMD
             return charater;
         }
 
-
-        Vector3 SafeNormalize(Vector3 vector3)
-        {
-            float dp3 = Math.Max(0.00001f, Vector3.Dot(vector3, vector3));
-            return vector3 / MathF.Sqrt(dp3);
-        }
-
         public class Bone
         {
-            public Vector3 dynamicPosition;
+            public Vector3 translation;
             public Quaternion rotation;
             public Vector3 staticPosition;
             public Vector3 appendTranslation;
@@ -495,13 +494,13 @@ namespace MMDMC.MMD
                 {
                     _generatedTransform = Matrix4x4.CreateTranslation(-staticPosition) *
                        Matrix4x4.CreateFromQuaternion(rotation * appendRotation) *
-                       Matrix4x4.CreateTranslation(staticPosition + appendTranslation + dynamicPosition) * list[ParentIndex]._generatedTransform;
+                       Matrix4x4.CreateTranslation(staticPosition + appendTranslation + translation) * list[ParentIndex]._generatedTransform;
                 }
                 else
                 {
                     _generatedTransform = Matrix4x4.CreateTranslation(-staticPosition) *
                        Matrix4x4.CreateFromQuaternion(rotation * appendRotation) *
-                       Matrix4x4.CreateTranslation(staticPosition + appendTranslation + dynamicPosition);
+                       Matrix4x4.CreateTranslation(staticPosition + appendTranslation + translation);
                 }
             }
             public Vector3 GetPos2()
